@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Login</title>
+        <style>
+            body {
+                font-family: Arial, sans-serif;
+                background-color: #f4f4f4;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                height: 100vh;
+                margin: 0;
+            }
+            #login-container {
+                background-color: white;
+                padding: 20px;
+                border-radius: 8px;
+                box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            }
+            #login-container h1 {
+                margin-bottom: 20px;
+                font-size: 24px;
+                text-align: center;
+            }
+            #login-container input[type="text"] {
+                width: 100%;
+                padding: 10px;
+                margin-bottom: 20px;
+                border: 1px solid #ccc;
+                border-radius: 4px;
+                font-size: 16px;
+            }
+            #login-container button {
+                width: 100%;
+                padding: 10px;
+                background-color: #28a745;
+                border: none;
+                border-radius: 4px;
+                color: white;
+                font-size: 16px;
+                cursor: pointer;
+            }
+            #login-container button:hover {
+                background-color: #218838;
+            }
+            #tos-container {
+                display: flex;
+                align-items: center;
+                margin-top: 10px;
+            }
+            #tos-container input[type="checkbox"] {
+                margin-right: 10px;
+            }
+        </style>
+    </head>
+    <body>
+        <div id="login-container">
+            <h1>Login</h1>
+            <input
+                type="text"
+                id="usernameInput"
+                placeholder="Enter your username"
+            />
+            <div id="tos-container">
+                <input type="checkbox" id="tosCheckbox" />
+                <label for="tosCheckbox"
+                    >I agree to the <a href="/TOS">Terms of Service</a></label
+                >
+            </div>
+            <button id="loginButton">Login</button>
+        </div>
+
+        <script>
+            const loginButton = document.getElementById("loginButton");
+            const usernameInput = document.getElementById("usernameInput");
+            const tosCheckbox = document.getElementById("tosCheckbox");
+
+            function setCookie(name, value, days) {
+                const expires = new Date(
+                    Date.now() + days * 864e5,
+                ).toUTCString();
+                document.cookie =
+                    name +
+                    "=" +
+                    encodeURIComponent(value) +
+                    "; expires=" +
+                    expires +
+                    "; path=/";
+            }
+
+            loginButton.addEventListener("click", () => {
+                const username = usernameInput.value.trim();
+                if (username) {
+                    if (!tosCheckbox.checked) {
+                        alert(
+                            "You must agree to the Terms of Service to proceed.",
+                        );
+                        return;
+                    }
+
+                    fetch("/login", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ username }),
+                    })
+                        .then((res) => res.json())
+                        .then((data) => {
+                            if (data.success) {
+                                const secretUsername = process.env.admin || "admin"; // Admin username
+                                const secret = process.env.admin || "3"; // Admin username
+
+                                setCookie("username", username, 7); // Save username in a cookie for 7 days
+                                alert(`Welcome back ${username}!`);
+                                if (username === secretUsername) {
+                                    window.location.href = "/99213"; // Redirect to admin page
+                                } if else (username === secret) {
+                                    window.location.href = "/public-chat";
+                                } else {
+                                    window.location.href = "/public-chat";
+                                }
+                            } else {
+                                alert("Login failed. Please try again.");
+                            }
+                        })
+                        .catch((error) => {
+                            console.error("Error during login request:", error);
+                        });
+                } else {
+                    alert("Please enter a username.");
+                }
+            });
+        </script>
+    </body>
+</html>
