@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <link rel="stylesheet" href="style.css" />
+        <title>Private Chatroom</title>
+        <style>
+            /* Add your chatroom styles here */
+        </style>
+    </head>
+    <body>
+        <div class="chat-box">
+            <div class="messages-container" id="messages"></div>
+            <div class="input-container">
+                <div>
+                    <input
+                        type="text"
+                        id="username"
+                        placeholder="Enter your username"
+                        disabled
+                    />
+                </div>
+                <textarea
+                    id="messageInput"
+                    placeholder="Type your message"
+                ></textarea>
+                <input type="file" id="fileInput" accept="*/*" />
+                <button id="sendButton">Send</button>
+                <button id="uploadButton">Upload File</button>
+            </div>
+        </div>
+
+        <script src="/socket.io/socket.io.js"></script>
+        <script>
+            const socket = io();
+            const roomId = window.location.pathname.split("/").pop();
+            const messages = document.getElementById("messages");
+            const usernameInput = document.getElementById("username");
+            const messageInput = document.getElementById("messageInput");
+            const fileInput = document.getElementById("fileInput");
+            const sendButton = document.getElementById("sendButton");
+
+            document.addEventListener("DOMContentLoaded", () => {
+                const savedUsername = localStorage.getItem("username");
+                usernameInput.value = savedUsername || "Anonymous";
+                socket.emit("join room", roomId);
+            });
+
+            sendButton.addEventListener("click", sendMessage);
+
+            socket.off("chat message").on("chat message", (msg) => {
+                addMessage(msg);
+            });
+
+            socket.off("chat history").on("chat history", (msgs) => {
+                msgs.forEach((msg) => addMessage(msg));
+            });
+
+            function sendMessage() {
+                const username = usernameInput.value;
+                const message = messageInput.value.trim();
+                const file = fileInput.files[0];
+
+                if (username && (message || file)) {
+                    const msg = {
+                        username,
+                        message,
+                        timestamp: new Date().toLocaleTimeString(),
+                    };
+
+                    if (file) {
+                        uploadFile().then((fileInfo) => {
+                            msg.file = fileInfo;
+                            socket.emit("chat message", msg);
+                            fileInput.value = "";
+                        });
+                    } else {
+                        socket.emit("chat message", msg);
+                    }
+
+                    messageInput.value = "";
+                }
+            }
+
+            function addMessage(msg) {
+                const msgElement = document.createElement("div");
+                msgElement.className = "message";
+                msgElement.innerHTML = `<strong>${msg.username}:</strong> ${
+                    msg.message
+                } <span>${msg.timestamp}</span> ${
+                    msg.file
+                        ? `<a href="/download/${msg.file.filename}" target="_blank">Download ${msg.file.originalName}</a>`
+                        : ""
+                }`;
+                messages.appendChild(msgElement);
+            }
+
+            function uploadFile() {
+                const formData = new FormData();
+                formData.append("file", fileInput.files[0]);
+
+                return fetch("/upload", {
+                    method: "POST",
+                    body: formData,
+                })
+                    .then((res) => res.json())
+                    .then((data) => data)
+                    .catch(() => null);
+            }
+        </script>
+    </body>
+</html>
